@@ -16,12 +16,12 @@ ARG AUDIVERIS_VERSION=5.10.2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget unzip default-jre-headless \
     && ( \
-        wget -q "https://github.com/Audiveris/audiveris/releases/download/v${AUDIVERIS_VERSION}/audiveris-${AUDIVERIS_VERSION}-ubuntu-24.04-amd64.deb" \
+        wget -q "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}-ubuntu22.04-x86_64.deb" \
              -O /tmp/audiveris.deb 2>/dev/null \
         && apt-get install -y --no-install-recommends /tmp/audiveris.deb \
         && rm /tmp/audiveris.deb \
     ) || ( \
-        wget -q "https://github.com/Audiveris/audiveris/releases/download/v${AUDIVERIS_VERSION}/audiveris-${AUDIVERIS_VERSION}.zip" \
+        wget -q "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}.zip" \
              -O /tmp/audiveris.zip \
         && unzip -q /tmp/audiveris.zip -d /opt/ \
         && rm /tmp/audiveris.zip \
