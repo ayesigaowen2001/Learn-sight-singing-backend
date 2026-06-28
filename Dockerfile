@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and unpack the exact zip archive link you provided
+# Download and unpack the exact zip archive link
 WORKDIR /build
 RUN wget -q "https://github.com{AUDIVERIS_VERSION}.zip" -O audiveris.zip \
     && unzip -q audiveris.zip \
