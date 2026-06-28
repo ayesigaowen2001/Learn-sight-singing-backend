@@ -1,16 +1,8 @@
 services:
-  # PostgreSQL database
-  - type: pserv
-    name: sight-singing-db
-    plan: free
-    envVarKey: DATABASE_URL
-
-  # Redis (for Celery)
   - type: redis
     name: sight-singing-redis
     plan: free
 
-  # Django web service
   - type: web
     name: sight-singing-web
     runtime: docker
@@ -25,10 +17,7 @@ services:
       - key: ALLOWED_HOSTS
         value: .onrender.com
       - key: DATABASE_URL
-        fromService:
-          name: sight-singing-db
-          type: pserv
-          property: connectionString
+        sync: false
       - key: CELERY_BROKER_URL
         fromService:
           name: sight-singing-redis
@@ -42,7 +31,6 @@ services:
       - key: CORS_ALLOW_ALL_ORIGINS
         value: "True"
 
-  # Celery worker
   - type: worker
     name: sight-singing-worker
     runtime: docker
@@ -57,10 +45,7 @@ services:
       - key: ALLOWED_HOSTS
         value: .onrender.com
       - key: DATABASE_URL
-        fromService:
-          name: sight-singing-db
-          type: pserv
-          property: connectionString
+        sync: false
       - key: CELERY_BROKER_URL
         fromService:
           name: sight-singing-redis
