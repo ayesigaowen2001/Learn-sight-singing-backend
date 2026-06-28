@@ -16,7 +16,7 @@ RUN wget -q "https://github.com/Audiveris/audiveris/archive/refs/tags/${AUDIVERI
 # Just change your working directory to the unpacked folder for the next steps
 WORKDIR /build/audiveris-${AUDIVERIS_VERSION}
 
-RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon -q
+RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
 RUN mkdir -p /opt/audiveris \
     && unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris \
