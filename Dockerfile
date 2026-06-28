@@ -16,9 +16,9 @@ WORKDIR /build/audiveris
 
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
-# FIX: Changed all instances to lowercase 'audiveris-*' to match Gradle's actual output
+# FIX: Wrapped the zip path in single quotes so unzip can handle the wildcard expansion
 RUN mkdir -p /opt/audiveris \
-    && unzip -q build/distributions/*.zip -d /opt/audiveris \
+    && unzip -q 'build/distributions/*.zip' -d /opt/audiveris \
     && mv /opt/audiveris/audiveris-*/* /opt/audiveris/ \
     && rm -rf /opt/audiveris/audiveris-*
     
