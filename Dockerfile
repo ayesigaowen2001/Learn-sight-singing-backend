@@ -1,4 +1,4 @@
-# --- Stage 1: Download Audiveris pre-built release ---
+# --- Stage 1: Build Audiveris from source ---
 FROM eclipse-temurin:17-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
@@ -8,14 +8,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN wget -q "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}.zip" \
+RUN wget -q "https://github.com/Audiveris/audiveris/archive/refs/tags/${AUDIVERIS_VERSION}.zip" \
          -O audiveris.zip \
-    && unzip -q audiveris.zip -d audiveris-dist \
-    && rm audiveris.zip
+    && unzip -q audiveris.zip \
+    && rm audiveris.zip \
+    && mv audiveris-${AUDIVERIS_VERSION}/* . \
+    && rmdir audiveris-${AUDIVERIS_VERSION}
 
-RUN mkdir -p /opt/audiveris && \
-    mv audiveris-dist/Audiveris-*/* /opt/audiveris/ 2>/dev/null || \
-    mv audiveris-dist/* /opt/audiveris/
+RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon -q
+
+RUN mkdir -p /opt/audiveris \
+    && unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris \
+    && mv /opt/audiveris/Audiveris-*/* /opt/audiveris/ \
+    && rm -rf /opt/audiveris/Audiveris-*
 
 
 # --- Stage 2: Python/Django production image ---
