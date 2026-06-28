@@ -1,5 +1,4 @@
 # --- Stage 1: Build Audiveris from source ---
-# --- Stage 1: Build Audiveris from source ---
 FROM eclipse-temurin:25-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
@@ -11,18 +10,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-# FIX: Removed the 'v' before ${AUDIVERIS_VERSION}
 RUN git clone --depth 1 --branch ${AUDIVERIS_VERSION} https://github.com/Audiveris/audiveris.git
 
 WORKDIR /build/audiveris
 
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
+# FIX: Changed all instances to lowercase 'audiveris-*' to match Gradle's actual output
 RUN mkdir -p /opt/audiveris \
-    && unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris \
-    && mv /opt/audiveris/Audiveris-*/* /opt/audiveris/ \
-    && rm -rf /opt/audiveris/Audiveris-*
-# --- Stage 2: Python/Django production image ---
+    && unzip -q build/distributions/*.zip -d /opt/audiveris \
+    && mv /opt/audiveris/audiveris-*/* /opt/audiveris/ \
+    && rm -rf /opt/audiveris/audiveris-*
+    
+    # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
