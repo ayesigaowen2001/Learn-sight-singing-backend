@@ -1,0 +1,75 @@
+services:
+  # PostgreSQL database
+  - type: pserv
+    name: sight-singing-db
+    plan: free
+    envVarKey: DATABASE_URL
+
+  # Redis (for Celery)
+  - type: redis
+    name: sight-singing-redis
+    plan: free
+
+  # Django web service
+  - type: web
+    name: sight-singing-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/uploads/
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromService:
+          name: sight-singing-db
+          type: pserv
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: sight-singing-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: sight-singing-redis
+          type: redis
+          property: connectionString
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "True"
+
+  # Celery worker
+  - type: worker
+    name: sight-singing-worker
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: celery -A sight_singing_backend worker --loglevel=info --concurrency=2
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromService:
+          name: sight-singing-db
+          type: pserv
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: sight-singing-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: sight-singing-redis
+          type: redis
+          property: connectionString
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "True"
