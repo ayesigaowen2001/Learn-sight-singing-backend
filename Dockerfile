@@ -19,10 +19,16 @@ WORKDIR /build/audiveris
 
 RUN chmod +x gradlew && ./gradlew installDist --no-daemon
 
-# FIX: Used a case-insensitive wildcard 'build/install/*/*' to move the files perfectly 
-# regardless of whether Gradle named the folder 'audiveris' or 'Audiveris'
+# FIX: Loop through whatever directory Gradle created inside build/install/ 
+# and move its inner layout directly into /opt/audiveris
+
 RUN mkdir -p /opt/audiveris \
-    && mv build/install/*/* /opt/audiveris/
+    && for dir in build/install/*; do \
+         if [ -d "$dir" ]; then \
+           cp -r "$dir"/* /opt/audiveris/; \
+         fi \
+       done
+
     # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
 
