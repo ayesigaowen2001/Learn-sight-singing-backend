@@ -15,13 +15,17 @@ RUN git clone --depth 1 --branch ${AUDIVERIS_VERSION} https://github.com/Audiver
 
 WORKDIR /build/audiveris
 
+WORKDIR /build/audiveris
+
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
-# FIX: Removed the single quotes around the zip path so the shell expands the wildcard correctly
+# FIX: CD into the directory first to ensure unzip and mv handle the wildcards cleanly
 RUN mkdir -p /opt/audiveris \
-    && unzip -q build/distributions/*.zip -d /opt/audiveris \
-    && mv /opt/audiveris/audiveris-*/* /opt/audiveris/ \
-    && rm -rf /opt/audiveris/audiveris-*
+    && cd build/distributions \
+    && unzip -q *.zip -d /opt/audiveris \
+    && cd /opt/audiveris \
+    && mv audiveris-*/* . \
+    && rmdir audiveris-*
     
     
     # --- Stage 2: Python/Django production image ---
