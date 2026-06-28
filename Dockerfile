@@ -1,32 +1,30 @@
 # --- Stage 1: Build Audiveris from source ---
-# FIX: Changed from eclipse-temurin:17-jdk to 25-jdk to meet Audiveris requirements
+# # --- Stage 1: Build Audiveris from source ---
 FROM eclipse-temurin:25-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
 
-# FIX: Added git so the :app:getCommit task doesn't crash
+# 1. Install git (and unzip for later distribution unpacking)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    unzip \
     git \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN wget -q "https://github.com/Audiveris/audiveris/archive/refs/tags/${AUDIVERIS_VERSION}.zip" \
-         -O audiveris.zip \
-    && unzip -q audiveris.zip \
-    && rm audiveris.zip
 
-# Just change your working directory to the unpacked folder for the next steps
-WORKDIR /build/audiveris-${AUDIVERIS_VERSION}
+# 2. Clone the repository at the specific tag instead of downloading a zip
+RUN git clone --depth 1 --branch v${AUDIVERIS_VERSION} https://github.com/Audiveris/audiveris.git
 
+# 3. Change directory into the cloned git repository folder
+WORKDIR /build/audiveris
+
+# 4. Run your build smoothly
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
 RUN mkdir -p /opt/audiveris \
     && unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris \
     && mv /opt/audiveris/Audiveris-*/* /opt/audiveris/ \
     && rm -rf /opt/audiveris/Audiveris-*
-
 
 # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
