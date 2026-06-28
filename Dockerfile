@@ -1,42 +1,62 @@
-FROM python:3.14-slim
+# --- Stage 1: Build Audiveris ---
+FROM python:3.11-slim AS builder
+
+ARG AUDIVERIS_VERSION=5.10.2
+
+# Install dependencies needed to download and compile Audiveris
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk \
+    git \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and extract the source release code
+WORKDIR /build
+RUN wget -q "https://github.com{AUDIVERIS_VERSION}.zip" -O audiveris.zip \
+    && unzip -q audiveris.zip \
+    && mv audiveris-${AUDIVERIS_VERSION} audiveris-src \
+    && rm audiveris.zip
+
+# Compile Audiveris using its internal Gradle wrapper
+WORKDIR /build/audiveris-src
+RUN ./gradlew assembleDist
+
+# Locate and extract the compiled distribution bundle
+RUN mkdir -p /opt/audiveris && \
+    unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris && \
+    # Move files up one folder if nested inside a version sub-directory
+    if [ -d /opt/audiveris/Audiveris-* ]; then mv /opt/audiveris/Audiveris-*/* /opt/audiveris/; fi
+
+# --- Stage 2: Final Runtime Environment ---
+FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies
+# Install runtime tools (Java Runtime and Tesseract OCR)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    default-jre-headless \
+    openjdk-17-jre-headless \
     tesseract-ocr \
+    tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Audiveris (try .deb first, fall back to generic .zip)
-ARG AUDIVERIS_VERSION=5.10.2
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget unzip default-jre-headless \
-    && ( \
-        wget -q "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}-ubuntu22.04-x86_64.deb" \
-             -O /tmp/audiveris.deb 2>/dev/null \
-        && apt-get install -y --no-install-recommends /tmp/audiveris.deb \
-        && rm /tmp/audiveris.deb \
-    ) || ( \
-        wget -q "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}.zip" \
-             -O /tmp/audiveris.zip \
-        && unzip -q /tmp/audiveris.zip -d /opt/ \
-        && rm /tmp/audiveris.zip \
-        && ln -s /opt/audiveris-${AUDIVERIS_VERSION}/bin/audiveris /usr/local/bin/audiveris \
-    ) \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the compiled application distribution from Stage 1
+COPY --from=builder /opt/audiveris /opt/audiveris
 
-# Install Python deps
+# Create a symlink to easily execute via command line
+RUN ln -s /opt/audiveris/bin/Audiveris /usr/local/bin/audiveris
+
+# Setup python application dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app
+# Copy Django code
 COPY . .
 
-# Entrypoint
+# Entrypoint setup
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
