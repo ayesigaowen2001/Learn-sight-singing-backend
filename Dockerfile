@@ -3,25 +3,25 @@ FROM eclipse-temurin:17-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
 
-# Install minimal tools needed for source retrieval
+# Install system utilities needed to download and extract files
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     wget \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and unpack Audiveris Source Code
+# Download and unpack the exact zip archive link you provided
 WORKDIR /build
 RUN wget -q "https://github.com{AUDIVERIS_VERSION}.zip" -O audiveris.zip \
     && unzip -q audiveris.zip \
     && mv audiveris-${AUDIVERIS_VERSION} audiveris-src \
     && rm audiveris.zip
 
-# Compile the production application package distribution
+# Compile the standalone production bundle using the internal Gradle wrapper
 WORKDIR /build/audiveris-src
 RUN ./gradlew assembleDist
 
-# Cleanly unpack the compiled application into /opt/audiveris
+# Unpack the compiled application package distribution into /opt/audiveris
 RUN mkdir -p /opt/audiveris && \
     unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris && \
     if [ -d /opt/audiveris/Audiveris-* ]; then mv /opt/audiveris/Audiveris-*/* /opt/audiveris/; fi
@@ -35,27 +35,27 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install standard runtime dependencies (Guaranteed naming convention in slim)
+# Install standard runtime dependencies (Headless Java and Tesseract OCR)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-jre-headless \
     tesseract-ocr \
     tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
-# Pull the compiled Audiveris core assets from the builder stage
+# Pull only the compiled Audiveris binary assets from the builder stage
 COPY --from=builder /opt/audiveris /opt/audiveris
 
-# Expose 'audiveris' command line execution globally to Django subprocess calls
+# Expose the 'audiveris' command line execution globally to Django subprocess calls
 RUN ln -s /opt/audiveris/bin/Audiveris /usr/local/bin/audiveris
 
-# Manage Python modules
+# Install Python application modules
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Bundle app source code
 COPY . .
 
-# Wire up the execution scripts
+# Setup entrypoint permissions
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
