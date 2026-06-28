@@ -1,4 +1,5 @@
 # --- Stage 1: Build Audiveris from source ---
+# --- Stage 1: Build Audiveris from source ---
 FROM eclipse-temurin:25-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
@@ -16,11 +17,12 @@ WORKDIR /build/audiveris
 
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
-# FIX: Wrapped the zip path in single quotes so unzip can handle the wildcard expansion
+# FIX: Removed the single quotes around the zip path so the shell expands the wildcard correctly
 RUN mkdir -p /opt/audiveris \
-    && unzip -q 'build/distributions/*.zip' -d /opt/audiveris \
+    && unzip -q build/distributions/*.zip -d /opt/audiveris \
     && mv /opt/audiveris/audiveris-*/* /opt/audiveris/ \
     && rm -rf /opt/audiveris/audiveris-*
+    
     
     # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
