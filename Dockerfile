@@ -17,13 +17,12 @@ RUN git clone --depth 1 --branch ${AUDIVERIS_VERSION} https://github.com/Audiver
 
 WORKDIR /build/audiveris
 
-# 1. Change assembleDist to installDist (this compiles AND unpacks it automatically)
 RUN chmod +x gradlew && ./gradlew installDist --no-daemon
 
-# 2. Directly move the cleanly unpacked files to /opt/audiveris (No unzipping needed!)
+# FIX: Used a case-insensitive wildcard 'build/install/*/*' to move the files perfectly 
+# regardless of whether Gradle named the folder 'audiveris' or 'Audiveris'
 RUN mkdir -p /opt/audiveris \
-    && mv build/install/audiveris/* /opt/audiveris/
-    
+    && mv build/install/*/* /opt/audiveris/
     # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
 
