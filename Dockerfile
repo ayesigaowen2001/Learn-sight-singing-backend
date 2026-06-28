@@ -16,16 +16,15 @@ RUN git clone --depth 1 --branch ${AUDIVERIS_VERSION} https://github.com/Audiver
 
 WORKDIR /build/audiveris
 
+
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
 
-# FIX: Navigating into the directories avoids shell wildcard expansion issues completely
+# FIX: Explicitly targets the zip file and uses a bulletproof extraction method
 RUN mkdir -p /opt/audiveris \
-    && cd build/distributions \
-    && unzip -q *.zip -d /opt/audiveris \
-    && cd /opt/audiveris \
-    && mv audiveris-*/* . \
-    && rmdir audiveris-*
-
+    && ZIP_FILE=$(find build/distributions/ -name "*.zip" | head -n 1) \
+    && unzip -q "$ZIP_FILE" -d /tmp/extracted \
+    && mv /tmp/extracted/audiveris-*/* /opt/audiveris/ \
+    && rm -rf /tmp/extracted
     
     # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
