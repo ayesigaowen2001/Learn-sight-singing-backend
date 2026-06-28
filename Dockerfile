@@ -11,9 +11,10 @@ WORKDIR /build
 RUN wget -q "https://github.com/Audiveris/audiveris/archive/refs/tags/${AUDIVERIS_VERSION}.zip" \
          -O audiveris.zip \
     && unzip -q audiveris.zip \
-    && rm audiveris.zip \
-    && mv audiveris-${AUDIVERIS_VERSION}/* . \
-    && rmdir audiveris-${AUDIVERIS_VERSION}
+    && rm audiveris.zip
+
+# Just change your working directory to the unpacked folder for the next steps
+WORKDIR /build/audiveris-${AUDIVERIS_VERSION}
 
 RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon -q
 
