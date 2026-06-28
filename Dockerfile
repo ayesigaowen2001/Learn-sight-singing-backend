@@ -1,10 +1,14 @@
 # --- Stage 1: Build Audiveris from source ---
-FROM eclipse-temurin:17-jdk AS builder
+# FIX: Changed from eclipse-temurin:17-jdk to 25-jdk to meet Audiveris requirements
+FROM eclipse-temurin:25-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
 
+# FIX: Added git so the :app:getCommit task doesn't crash
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget unzip \
+    wget \
+    unzip \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -32,6 +36,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# NOTE: default-jre-headless in Debian stable/testing might still pull Java 17 or 21.
+# If Audiveris throws a runtime version error when your Django app calls it,
+# change "default-jre-headless" below to "openjdk-25-jre-headless"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-jre-headless \
     tesseract-ocr \
