@@ -14,17 +14,15 @@ WORKDIR /build
 RUN git clone --depth 1 --branch ${AUDIVERIS_VERSION} https://github.com/Audiveris/audiveris.git
 
 
+
 WORKDIR /build/audiveris
 
+# 1. Change assembleDist to installDist (this compiles AND unpacks it automatically)
+RUN chmod +x gradlew && ./gradlew installDist --no-daemon
 
-RUN chmod +x gradlew && ./gradlew assembleDist --no-daemon
-
-# FIX: Explicitly targets the zip file and uses a bulletproof extraction method
+# 2. Directly move the cleanly unpacked files to /opt/audiveris (No unzipping needed!)
 RUN mkdir -p /opt/audiveris \
-    && ZIP_FILE=$(find build/distributions/ -name "*.zip" | head -n 1) \
-    && unzip -q "$ZIP_FILE" -d /tmp/extracted \
-    && mv /tmp/extracted/audiveris-*/* /opt/audiveris/ \
-    && rm -rf /tmp/extracted
+    && mv build/install/audiveris/* /opt/audiveris/
     
     # --- Stage 2: Python/Django production image ---
 FROM python:3.14-slim
