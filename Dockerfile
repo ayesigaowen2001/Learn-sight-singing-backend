@@ -1,5 +1,4 @@
 # --- Stage 1: Build Audiveris from source ---
-# --- Stage 1: Build Audiveris from source ---
 FROM eclipse-temurin:25-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
