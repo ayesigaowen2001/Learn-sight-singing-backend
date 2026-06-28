@@ -1,34 +1,33 @@
-# --- Stage 1: Build Audiveris ---
-FROM python:3.11-slim AS builder
+# --- Stage 1: Build Audiveris using an Official Java Image ---
+FROM eclipse-temurin:17-jdk AS builder
 
 ARG AUDIVERIS_VERSION=5.10.2
 
-# Install dependencies needed to download and compile Audiveris
+# Install minimal tools needed for source retrieval
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk \
     git \
     wget \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and extract the source release code
+# Download and unpack Audiveris Source Code
 WORKDIR /build
 RUN wget -q "https://github.com{AUDIVERIS_VERSION}.zip" -O audiveris.zip \
     && unzip -q audiveris.zip \
     && mv audiveris-${AUDIVERIS_VERSION} audiveris-src \
     && rm audiveris.zip
 
-# Compile Audiveris using its internal Gradle wrapper
+# Compile the production application package distribution
 WORKDIR /build/audiveris-src
 RUN ./gradlew assembleDist
 
-# Locate and extract the compiled distribution bundle
+# Cleanly unpack the compiled application into /opt/audiveris
 RUN mkdir -p /opt/audiveris && \
     unzip -q build/distributions/Audiveris-*.zip -d /opt/audiveris && \
-    # Move files up one folder if nested inside a version sub-directory
     if [ -d /opt/audiveris/Audiveris-* ]; then mv /opt/audiveris/Audiveris-*/* /opt/audiveris/; fi
 
-# --- Stage 2: Final Runtime Environment ---
+
+# --- Stage 2: Clean Python/Django Production Environment ---
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -36,27 +35,27 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install runtime tools (Java Runtime and Tesseract OCR)
+# Install standard runtime dependencies (Guaranteed naming convention in slim)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
+    default-jre-headless \
     tesseract-ocr \
     tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled application distribution from Stage 1
+# Pull the compiled Audiveris core assets from the builder stage
 COPY --from=builder /opt/audiveris /opt/audiveris
 
-# Create a symlink to easily execute via command line
+# Expose 'audiveris' command line execution globally to Django subprocess calls
 RUN ln -s /opt/audiveris/bin/Audiveris /usr/local/bin/audiveris
 
-# Setup python application dependencies
+# Manage Python modules
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Django code
+# Bundle app source code
 COPY . .
 
-# Entrypoint setup
+# Wire up the execution scripts
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
