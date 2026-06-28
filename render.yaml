@@ -2,6 +2,9 @@ services:
   - type: redis
     name: sight-singing-redis
     plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
 
   - type: web
     name: sight-singing-web
